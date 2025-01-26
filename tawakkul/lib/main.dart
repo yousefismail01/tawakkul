@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'screens/prayer_times_screen.dart';
 import 'screens/qibla_screen.dart';
 import 'screens/quran_screen.dart';
+import 'controllers/prayer_times_controller.dart';
 
-void main() => runApp(const IslamicApp());
+void main() {
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => PrayerTimesController()),
+      ],
+      child: const Tawakkul(),
+    ),
+  );
+}
 
-class IslamicApp extends StatelessWidget {
-  const IslamicApp({super.key});
+class Tawakkul extends StatelessWidget {
+  const Tawakkul({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,10 +38,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final _screens = const [
+  static const List<Widget> _screens = [
     PrayerTimesScreen(),
     QiblaScreen(),
   ];
+
+  void _onTabSelected(int index) {
+    if (index != _currentIndex) {
+      setState(() => _currentIndex = index);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,32 +56,28 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index < 2) setState(() => _currentIndex = index);
-        },
-        backgroundColor: Colors.transparent,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-              icon: ImageIcon(AssetImage('assets/home_icon.png')),
-              label: 'Prayer'),
-          BottomNavigationBarItem(
-              icon: ImageIcon(AssetImage('assets/kaaba_icon.png')),
-              label: 'Qibla'),
-          BottomNavigationBarItem(
-              icon: ImageIcon(AssetImage('assets/mosque_icon.png')),
-              label: 'Coming Soon'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.castle), label: 'Coming Soon'),
-          // BottomNavigationBarItem(
-          //     icon: ImageIcon(AssetImage('assets/settings_icon.png')),
-          //     label: 'Coming Soon'),
-        ],
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white.withOpacity(0.5),
-      ),
+      // Uncomment when ready to use the bottom nav bar
+      // bottomNavigationBar: BottomNavigationBar(
+      //   currentIndex: _currentIndex,
+      //   onTap: _onTabSelected,
+      //   backgroundColor: Colors.transparent,
+      //   type: BottomNavigationBarType.fixed,
+      //   items: const [
+      //     BottomNavigationBarItem(
+      //         icon: ImageIcon(AssetImage('assets/images/home_icon.png')),
+      //         label: 'Prayer'),
+      //     BottomNavigationBarItem(
+      //         icon: ImageIcon(AssetImage('assets/images/kaaba_icon.png')),
+      //         label: 'Qibla'),
+      //     BottomNavigationBarItem(
+      //         icon: ImageIcon(AssetImage('assets/images/mosque_icon.png')),
+      //         label: 'Coming Soon'),
+      //     BottomNavigationBarItem(
+      //         icon: Icon(Icons.castle), label: 'Coming Soon'),
+      //   ],
+      //   selectedItemColor: Colors.white,
+      //   unselectedItemColor: Colors.white.withOpacity(0.5),
+      // ),
     );
   }
 }

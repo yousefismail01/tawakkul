@@ -1,6 +1,6 @@
 name: tawakkul
 description: "A new Flutter project."
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
@@ -9,8 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_compass: 0.8.1
-  adhan: ^2.0.0
+  provider: ^6.1.0
+  geocoding: ^2.1.1
+  flutter_compass: ^0.8.1
+  adhan: ^2.0.0  # Reverted to last known stable version
   geolocator: ^9.0.0
   intl: ^0.18.0
   quran: ^1.0.0
@@ -22,10 +24,9 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^2.0.0
 
-# The following section is specific to Flutter packages.
 flutter:
   uses-material-design: true
   assets:
-    - assets/home_icon.png
-    - assets/mosque_icon.png
-    - assets/kaaba_icon.png
+    - assets/images/home_icon.png
+    - assets/images/mosque_icon.png
+    - assets/images/kaaba_icon.png
