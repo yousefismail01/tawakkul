@@ -19,7 +19,7 @@ class PrayerService {
         desiredAccuracy: LocationAccuracy.high,
       );
     } catch (e) {
-      // print("Error getting location: $e");
+      print("Error getting location: $e");
       return null;
     }
   }
@@ -127,5 +127,55 @@ class PrayerService {
       print("Error fetching city name: $e");
     }
     return null; // Return null if there's an error
+  }
+
+  static String getLastPrayer(PrayerTimes prayerTimes) {
+    final now = DateTime.now();
+    final prayers = {
+      'Fajr': prayerTimes.fajr,
+      'Sunrise': prayerTimes.sunrise,
+      'Dhuhr': prayerTimes.dhuhr,
+      'Asr': prayerTimes.asr,
+      'Maghrib': prayerTimes.maghrib,
+      'Isha': prayerTimes.isha,
+    };
+
+    String lastPrayer = 'Isha'; // Default to Isha if past all prayers
+
+    for (var entry in prayers.entries) {
+      if (entry.value.isBefore(now)) {
+        lastPrayer = entry.key; // Keep updating until we find the last one
+      }
+    }
+
+    /// 🔹 If all prayers have passed today, return "Isha" instead of defaulting to Fajr
+    if (prayers['Isha']!.isBefore(now)) {
+      return 'Isha';
+    }
+
+    return lastPrayer;
+  }
+
+  static Map<String, DateTime> calculateNightThirds(PrayerTimes prayerTimes) {
+    DateTime isha = prayerTimes.isha;
+
+    /// 🔹 Get the next day's Fajr time
+    DateTime nextFajr = prayerTimes.fajr.add(const Duration(days: 1));
+
+    /// 🔹 Calculate total night duration from Isha to next Fajr
+    Duration nightDuration = nextFajr.difference(isha);
+    Duration third = Duration(seconds: nightDuration.inSeconds ~/ 3);
+
+    /// 🔹 Calculate thirds
+    DateTime firstThird = isha.add(third);
+    DateTime lastThird = nextFajr.subtract(third);
+    DateTime midnight =
+        isha.add(Duration(seconds: nightDuration.inSeconds ~/ 2));
+
+    return {
+      'First Third': firstThird,
+      'Midnight': midnight,
+      'Last Third': lastThird,
+    };
   }
 }

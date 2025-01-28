@@ -8,18 +8,20 @@ class QuranScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16),
-      children: QuranService.getVerses().map((verse) => 
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              verse,
-              style: const TextStyle(fontSize: 24),
-              textDirection: TextDirection.rtl,
+      children: QuranService.getVerses()
+          .map(
+            (verse) => Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  verse,
+                  style: const TextStyle(fontSize: 24, fontFamily: 'Poppins'),
+                  textDirection: TextDirection.rtl,
+                ),
+              ),
             ),
-          ),
-        ),
-      ).toList(),
+          )
+          .toList(),
     );
   }
 }

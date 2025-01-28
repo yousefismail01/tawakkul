@@ -15,6 +15,8 @@ class PrayerTimesController extends ChangeNotifier {
   Timer? timer;
   final ValueNotifier<String> timeLeftNotifier = ValueNotifier('');
   String? currentCity; // 🔹 Store current city name
+  String lastPrayer = ""; // Default value, will be updated in _getPrayerTimes()
+  bool isToday = true; // Tracks if the user is on today's date
 
   PrayerTimesController() {
     _initialize();
@@ -30,7 +32,6 @@ class PrayerTimesController extends ChangeNotifier {
       cachedPosition ??= await PrayerService.getCurrentLocation();
 
       if (cachedPosition != null) {
-        /// 🔹 Fetch city name (Modify this to use an actual geolocation API)
         currentCity = await PrayerService.getCityFromCoordinates(
           cachedPosition!.latitude,
           cachedPosition!.longitude,
@@ -48,6 +49,13 @@ class PrayerTimesController extends ChangeNotifier {
           selectedDate,
         );
 
+        /// 🔹 Check if selected date is today
+        isToday = DateUtils.isSameDay(selectedDate, DateTime.now());
+
+        /// 🔹 Highlight last prayer only if on the current day
+        lastPrayer =
+            isToday ? PrayerService.getLastPrayer(timerPrayerTimes!) : "";
+
         isLoading = false;
         notifyListeners();
       }
@@ -58,10 +66,11 @@ class PrayerTimesController extends ChangeNotifier {
 
   /// 🔹 **Re-added `_startTimer()`**
   void _startTimer() {
-    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    timer = Timer.periodic(const Duration(seconds: 60), (timer) {
+      // 🔹 Refresh every 60s instead of 1s
       if (timerPrayerTimes != null) {
         timeLeftNotifier.value = _getTimeUntilNextPrayer();
-        notifyListeners(); // 🔹 Ensures UI updates every second
+        notifyListeners(); // 🔹 Ensure UI updates with the latest prayer
       }
     });
   }
@@ -99,6 +108,13 @@ class PrayerTimesController extends ChangeNotifier {
 
   void changeDate(int days) {
     selectedDate = selectedDate.add(Duration(days: days));
+
+    /// 🔹 Check if the selected date is today
+    isToday = DateUtils.isSameDay(selectedDate, DateTime.now());
+
+    /// 🔹 Highlight last prayer only if it's today, otherwise clear it
+    lastPrayer = isToday ? PrayerService.getLastPrayer(timerPrayerTimes!) : "";
+
     _getPrayerTimes(); // Ensure prayer times update when date changes
     notifyListeners();
   }

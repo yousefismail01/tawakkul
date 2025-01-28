@@ -6,9 +6,9 @@ class BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
-      backgroundColor: Colors.transparent,
-      selectedItemColor: Colors.orange,
-      unselectedItemColor: Colors.white70,
+      backgroundColor: const Color(0xFF121931),
+      selectedItemColor: const Color(0xFFA44AFF),
+      unselectedItemColor: const Color(0xFF9392AE),
       type: BottomNavigationBarType.fixed,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.mosque), label: 'Prayer'),
