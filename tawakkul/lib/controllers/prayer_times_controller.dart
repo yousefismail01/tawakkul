@@ -164,68 +164,52 @@ class PrayerTimesController extends ChangeNotifier {
   }
 
   double getTimeLeftPercentage() {
-    if (timerPrayerTimes == null) return 0;
+  if (timerPrayerTimes == null) return 0;
 
-    final now = DateTime.now();
-    var nextPrayer = timerPrayerTimes!.nextPrayer();
-    var nextPrayerTime =
-        PrayerService.getNextPrayerTime(timerPrayerTimes!, nextPrayer);
+  final now = DateTime.now();
+  var nextPrayer = timerPrayerTimes!.nextPrayer();
+  var nextPrayerTime = PrayerService.getNextPrayerTime(timerPrayerTimes!, nextPrayer);
 
-    /// 🔹 **Handle Isha → Next Day’s Fajr Transition**
-    if (nextPrayer == Prayer.none || nextPrayerTime == null) {
-      final tomorrow =
-          DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
-      final tomorrowPrayers = PrayerService.calculatePrayerTimes(
-        cachedPosition!.latitude,
-        cachedPosition!.longitude,
-        tomorrow,
-      );
-      nextPrayerTime =
-          tomorrowPrayers.fajr; // ✅ Transition from Isha to next day’s Fajr
-      nextPrayer = Prayer.fajr;
-    }
-
-    /// 🔹 **Find the Previous Prayer**
-    final previousPrayer = timerPrayerTimes!.currentPrayer();
-    var previousPrayerTime =
-        PrayerService.getPreviousPrayerTime(timerPrayerTimes!, previousPrayer);
-
-    /// 🔹 **Special Case: If Previous Prayer is Isha, Calculate Based on Next Day’s Fajr**
-    if (previousPrayer == Prayer.isha) {
-      final tomorrow =
-          DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
-      final tomorrowPrayers = PrayerService.calculatePrayerTimes(
-        cachedPosition!.latitude,
-        cachedPosition!.longitude,
-        tomorrow,
-      );
-      previousPrayerTime = timerPrayerTimes!.isha; // ✅ Start at today's Isha
-      nextPrayerTime = tomorrowPrayers.fajr; // ✅ End at tomorrow’s Fajr
-    }
-
-    /// 🔹 **Ensure Valid Previous Prayer**
-    if (previousPrayerTime == null) {
-      final yesterday = DateTime(now.year, now.month, now.day)
-          .subtract(const Duration(days: 1));
-      final yesterdayPrayers = PrayerService.calculatePrayerTimes(
-        cachedPosition!.latitude,
-        cachedPosition!.longitude,
-        yesterday,
-      );
-      previousPrayerTime =
-          yesterdayPrayers.isha; // ✅ Use previous day’s Isha as fallback
-    }
-
-    /// 🔹 **Calculate Progress Percentage**
-    final totalDuration = nextPrayerTime.difference(previousPrayerTime);
-    final remainingDuration = nextPrayerTime.difference(now);
-
-    double percentage =
-        (totalDuration.inSeconds - remainingDuration.inSeconds) /
-            totalDuration.inSeconds;
-
-    return percentage.clamp(0.0, 1.0); // ✅ Ensure value is between 0.0 and 1.0
+  /// 🔹 Handle transition from Isha → Next day's Fajr
+  if (nextPrayer == Prayer.none) {
+    final tomorrow = now.add(const Duration(days: 1));
+    final tomorrowPrayers = PrayerService.calculatePrayerTimes(
+      cachedPosition!.latitude, cachedPosition!.longitude, tomorrow);
+    nextPrayerTime = tomorrowPrayers.fajr;
   }
+
+  /// 🔹 Check if it's a new day **before Fajr** (Use yesterday's Isha)
+  bool isBeforeFajr = now.isBefore(timerPrayerTimes!.fajr);
+  DateTime? previousPrayerTime;
+
+  if (isBeforeFajr) {
+    final yesterday = now.subtract(const Duration(days: 1));
+    final yesterdayPrayers = PrayerService.calculatePrayerTimes(
+      cachedPosition!.latitude, cachedPosition!.longitude, yesterday);
+    previousPrayerTime = yesterdayPrayers.isha;
+    // print("[DEBUG] Using YESTERDAY's Isha for calculation: $previousPrayerTime");
+  } else {
+    previousPrayerTime = PrayerService.getPreviousPrayerTime(timerPrayerTimes!, timerPrayerTimes!.currentPrayer());
+  }
+
+  if (previousPrayerTime == null || nextPrayerTime == null) return 0;
+
+  /// 🔹 Calculate progress correctly
+  final totalDuration = nextPrayerTime.difference(previousPrayerTime).inSeconds;
+  final elapsedDuration = now.difference(previousPrayerTime).inSeconds;
+
+  /// 🔹 Ensure progress is between 0 and 1
+  double progress = elapsedDuration / totalDuration;
+  progress = progress.clamp(0.0, 1.0);
+
+  // print("[DEBUG] Current Time: $now");
+  // print("[DEBUG] Previous Prayer (Before Fajr): $previousPrayerTime");
+  // print("[DEBUG] Next Prayer: $nextPrayer at $nextPrayerTime");
+  // print("[DEBUG] Progress: $progress");
+
+  return progress;
+}
+
 
   String getNextPrayerName() {
     if (timerPrayerTimes == null) return "Unknown";
