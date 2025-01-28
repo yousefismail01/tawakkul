@@ -58,6 +58,7 @@ class PrayerListWidget extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    /// 🔹 Prayer Name (Bold if Last Prayer)
                     Text(
                       prayerName,
                       style: TextStyle(
@@ -71,14 +72,18 @@ class PrayerListWidget extends StatelessWidget {
                         fontFamily: 'Poppins',
                       ),
                     ),
+
+                    /// 🔹 Prayer Time (Bold if Last Prayer)
                     Text(
                       PrayerService.formatTime(prayerTime),
                       style: TextStyle(
-                        color: (isPastPrayer || isPastDay)
-                            ? Colors.white.withOpacity(0.5)
-                            : Colors.white.withOpacity(0.9),
+                        color: isLastPrayer
+                            ? Colors.white
+                            : (isPastPrayer || isPastDay)
+                                ? Colors.white.withOpacity(0.5)
+                                : Colors.white.withOpacity(0.9),
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: isLastPrayer ? FontWeight.bold : FontWeight.w500, // ✅ Now bold if last prayer
                         fontFamily: 'Poppins',
                       ),
                     ),

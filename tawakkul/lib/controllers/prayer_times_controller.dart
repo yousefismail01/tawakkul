@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:adhan/adhan.dart';
 import 'package:geolocator/geolocator.dart';
@@ -5,6 +6,8 @@ import '../services/prayer_service.dart';
 import 'dart:async';
 import 'package:hijri/hijri_calendar.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class PrayerTimesController extends ChangeNotifier {
   PrayerTimes? prayerTimes;
@@ -17,6 +20,7 @@ class PrayerTimesController extends ChangeNotifier {
   String? currentCity; // 🔹 Store current city name
   String lastPrayer = ""; // Default value, will be updated in _getPrayerTimes()
   bool isToday = true; // Tracks if the user is on today's date
+  int hijriMonthDays = 30; // Default value
 
   PrayerTimesController() {
     _initialize();
@@ -25,6 +29,23 @@ class PrayerTimesController extends ChangeNotifier {
   void _initialize() {
     _getPrayerTimes();
     _startTimer(); // 🔹 Add back _startTimer() call
+  }
+
+  /// 🔹 **Fetch Hijri Month Length from API**
+  Future<void> fetchHijriMonthLength() async {
+    try {
+      final response = await http.get(Uri.parse(
+          'https://api.aladhan.com/v1/gToH?date=1-9-${selectedDate.year}')); // Fetch 1st of Ramadan
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final int monthDays = int.parse(data['data']['hijri']['month']['days']);
+        hijriMonthDays = monthDays;
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Error fetching Hijri month length: $e");
+    }
   }
 
   Future<void> _getPrayerTimes() async {
@@ -66,11 +87,10 @@ class PrayerTimesController extends ChangeNotifier {
 
   /// 🔹 **Re-added `_startTimer()`**
   void _startTimer() {
-    timer = Timer.periodic(const Duration(seconds: 60), (timer) {
-      // 🔹 Refresh every 60s instead of 1s
+    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (timerPrayerTimes != null) {
         timeLeftNotifier.value = _getTimeUntilNextPrayer();
-        notifyListeners(); // 🔹 Ensure UI updates with the latest prayer
+        notifyListeners(); // ✅ Ensure UI updates every second
       }
     });
   }
@@ -145,24 +165,66 @@ class PrayerTimesController extends ChangeNotifier {
 
   double getTimeLeftPercentage() {
     if (timerPrayerTimes == null) return 0;
+
     final now = DateTime.now();
-    final nextPrayer = timerPrayerTimes!.nextPrayer();
-    final nextPrayerTime =
+    var nextPrayer = timerPrayerTimes!.nextPrayer();
+    var nextPrayerTime =
         PrayerService.getNextPrayerTime(timerPrayerTimes!, nextPrayer);
 
-    if (nextPrayerTime == null) return 0;
+    /// 🔹 **Handle Isha → Next Day’s Fajr Transition**
+    if (nextPrayer == Prayer.none || nextPrayerTime == null) {
+      final tomorrow =
+          DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+      final tomorrowPrayers = PrayerService.calculatePrayerTimes(
+        cachedPosition!.latitude,
+        cachedPosition!.longitude,
+        tomorrow,
+      );
+      nextPrayerTime =
+          tomorrowPrayers.fajr; // ✅ Transition from Isha to next day’s Fajr
+      nextPrayer = Prayer.fajr;
+    }
 
+    /// 🔹 **Find the Previous Prayer**
     final previousPrayer = timerPrayerTimes!.currentPrayer();
-    final previousPrayerTime =
+    var previousPrayerTime =
         PrayerService.getPreviousPrayerTime(timerPrayerTimes!, previousPrayer);
 
-    if (previousPrayerTime == null) return 0;
+    /// 🔹 **Special Case: If Previous Prayer is Isha, Calculate Based on Next Day’s Fajr**
+    if (previousPrayer == Prayer.isha) {
+      final tomorrow =
+          DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+      final tomorrowPrayers = PrayerService.calculatePrayerTimes(
+        cachedPosition!.latitude,
+        cachedPosition!.longitude,
+        tomorrow,
+      );
+      previousPrayerTime = timerPrayerTimes!.isha; // ✅ Start at today's Isha
+      nextPrayerTime = tomorrowPrayers.fajr; // ✅ End at tomorrow’s Fajr
+    }
 
+    /// 🔹 **Ensure Valid Previous Prayer**
+    if (previousPrayerTime == null) {
+      final yesterday = DateTime(now.year, now.month, now.day)
+          .subtract(const Duration(days: 1));
+      final yesterdayPrayers = PrayerService.calculatePrayerTimes(
+        cachedPosition!.latitude,
+        cachedPosition!.longitude,
+        yesterday,
+      );
+      previousPrayerTime =
+          yesterdayPrayers.isha; // ✅ Use previous day’s Isha as fallback
+    }
+
+    /// 🔹 **Calculate Progress Percentage**
     final totalDuration = nextPrayerTime.difference(previousPrayerTime);
     final remainingDuration = nextPrayerTime.difference(now);
 
-    return (totalDuration.inSeconds - remainingDuration.inSeconds) /
-        totalDuration.inSeconds;
+    double percentage =
+        (totalDuration.inSeconds - remainingDuration.inSeconds) /
+            totalDuration.inSeconds;
+
+    return percentage.clamp(0.0, 1.0); // ✅ Ensure value is between 0.0 and 1.0
   }
 
   String getNextPrayerName() {
