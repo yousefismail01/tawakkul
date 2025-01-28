@@ -12,11 +12,13 @@ class PrayerListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Provider.of<PrayerTimesController>(context);
-    final String lastPrayer = controller.lastPrayer;
     final bool isToday = controller.isToday;
-    final bool isPastDay = !isToday && controller.selectedDate.isBefore(DateTime.now()); // 🔹 Ensure past days turn gray
+    final bool isPastDay = controller.selectedDate.isBefore(
+      DateTime.now().subtract(const Duration(days: 1)),
+    );
     final now = DateTime.now();
 
+    /// 🔹 Get prayer times
     final prayerTimesList = {
       'Fajr': prayerTimes.fajr,
       'Sunrise': prayerTimes.sunrise,
@@ -25,6 +27,12 @@ class PrayerListWidget extends StatelessWidget {
       'Maghrib': prayerTimes.maghrib,
       'Isha': prayerTimes.isha,
     };
+
+    /// 🔹 Determine if we're in a new day **before** Fajr
+    final bool isBeforeFajr = isToday && now.isBefore(prayerTimes.fajr);
+
+    /// 🔹 Get the last prayer (only if Fajr has passed)
+    final String lastPrayer = isBeforeFajr ? "" : controller.lastPrayer;
 
     /// 🔹 Get the night thirds times
     final nightThirds = PrayerService.calculateNightThirds(prayerTimes);
@@ -39,11 +47,11 @@ class PrayerListWidget extends StatelessWidget {
               final prayerName = prayerTimesList.keys.elementAt(index);
               final prayerTime = prayerTimesList.values.elementAt(index);
 
-              /// 🔹 Check if this prayer has already happened today
+              /// 🔹 Properly check if this prayer has already happened today
               final bool isPastPrayer = isToday && prayerTime.isBefore(now);
 
-              /// 🔹 Highlight last prayer only if it's today
-              final bool isLastPrayer = isToday && (prayerName == lastPrayer);
+              /// 🔹 Ensure last prayer stays bold only **if Fajr has passed**
+              final bool isLastPrayer = isToday && (prayerName == lastPrayer) && !isBeforeFajr;
 
               return Container(
                 margin: const EdgeInsets.symmetric(vertical: 4),
@@ -83,7 +91,7 @@ class PrayerListWidget extends StatelessWidget {
                                 ? Colors.white.withOpacity(0.5)
                                 : Colors.white.withOpacity(0.9),
                         fontSize: 16,
-                        fontWeight: isLastPrayer ? FontWeight.bold : FontWeight.w500, // ✅ Now bold if last prayer
+                        fontWeight: isLastPrayer ? FontWeight.bold : FontWeight.w500,
                         fontFamily: 'Poppins',
                       ),
                     ),
