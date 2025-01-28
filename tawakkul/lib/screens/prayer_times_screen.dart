@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../controllers/prayer_times_controller.dart';
-import '../painter/night_sky_painter.dart';
+import '../themes/prayer_theme_manager.dart'; // ✅ New Theme Manager
 import '../widgets/prayer_timer_widget.dart';
 import '../widgets/prayer_list_widget.dart';
 import '../widgets/bottom_nav_bar.dart';
@@ -19,21 +19,26 @@ class PrayerTimesScreen extends StatelessWidget {
     final double screenHeight = MediaQuery.of(context).size.height;
     final double screenWidth = MediaQuery.of(context).size.width;
 
-    /// 🔹 Determine if the selected date is past, present, or future
+    /// 🔹 Determine if the selected date is today
     final bool isToday =
         DateUtils.isSameDay(controller.selectedDate, DateTime.now());
-    final bool isFuture = controller.selectedDate.isAfter(DateTime.now());
-    final bool isPast = controller.selectedDate.isBefore(
-      DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day),
-    );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF040C23), // Night sky color
+      /// ✅ **Set the dynamic theme based on prayer time**
       body: SafeArea(
         child: Stack(
           children: [
-            /// 🔹 **Animated Night Sky**
-            const Positioned.fill(child: AnimatedNightSky()),
+            /// 🔹 **Dynamic Background Based on Prayer Time**
+            Positioned.fill(
+              child: AnimatedSwitcher(
+                duration:
+                    const Duration(milliseconds: 500), // Smooth transition
+                child: PrayerThemeManager.getCurrentTheme(
+                  controller.prayerTimes!,
+                  controller.selectedDate,
+                ),
+              ),
+            ),
 
             /// 🔹 **Main Column with Dynamic Scaling**
             Column(
@@ -41,9 +46,9 @@ class PrayerTimesScreen extends StatelessWidget {
               children: [
                 SizedBox(height: screenHeight * 0.03), // Adaptive spacing
 
-                /// 🔹 **Prayer Timer Widget** (Ensures it stays at the top)
+                /// 🔹 **Prayer Timer Widget**
                 SizedBox(
-                  height: screenHeight * 0.22, // ✅ Proper height for all devices
+                  height: screenHeight * 0.22,
                   child: PrayerTimerWidget(
                     timeLeftPercentage: controller.getTimeLeftPercentage(),
                     prayerName: controller.getNextPrayerName(),
@@ -51,7 +56,7 @@ class PrayerTimesScreen extends StatelessWidget {
                   ),
                 ),
 
-                SizedBox(height: screenHeight * 0.015), // ✅ Adjusted spacing
+                SizedBox(height: screenHeight * 0.015), // Adjusted spacing
 
                 /// 🔹 **"Today | City" Box**
                 Center(
@@ -75,45 +80,21 @@ class PrayerTimesScreen extends StatelessWidget {
                           border: Border.all(
                               color: const Color(0xFFA44AFF), width: 1.5),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (isFuture) ...[
-                              const Icon(Icons.arrow_back,
-                                  size: 12, color: Color(0xFFA44AFF)),
-                              const SizedBox(width: 4),
-                            ],
-                            const Text(
-                              'TODAY',
-                              style: TextStyle(
-                                color: Color(0xFFA44AFF),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Poppins',
-                              ),
-                            ),
-                            Text(
-                              ' | ${controller.currentCity ?? "Unknown"}',
-                              style: const TextStyle(
-                                color: Color(0xFFA44AFF),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Poppins',
-                              ),
-                            ),
-                            if (isPast) ...[
-                              const SizedBox(width: 4),
-                              const Icon(Icons.arrow_forward,
-                                  size: 12, color: Color(0xFFA44AFF)),
-                            ],
-                          ],
+                        child: Text(
+                          'TODAY | ${controller.currentCity ?? "Unknown"}',
+                          style: const TextStyle(
+                            color: Color(0xFFA44AFF),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Poppins',
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
 
-                SizedBox(height: screenHeight * 0.015), // ✅ Adjusted spacing
+                SizedBox(height: screenHeight * 0.015), // Adjusted spacing
 
                 /// 🔹 **Date Selector (Restored)**
                 Row(
@@ -154,7 +135,7 @@ class PrayerTimesScreen extends StatelessWidget {
                   ],
                 ),
 
-                SizedBox(height: screenHeight * 0.02), // ✅ Adjusted spacing
+                SizedBox(height: screenHeight * 0.02), // Adjusted spacing
 
                 /// 🔹 **Prayer Times List (Takes Remaining Space)**
                 Expanded(
