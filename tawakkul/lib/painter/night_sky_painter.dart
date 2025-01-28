@@ -16,21 +16,29 @@ class NightSkyPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Paint moonPaint = Paint()..color = Colors.white.withOpacity(0.9);
-    final Paint moonGlowPaint = Paint()..color = Colors.white.withOpacity(0.2);
+    final Paint moonGlowPaint1 = Paint()..color = Colors.white.withOpacity(0.3);
+    final Paint moonGlowPaint2 = Paint()..color = Colors.white.withOpacity(0.15);
     final Paint starPaint = Paint();
 
-    /// 🔹 Draw Moon (Top Right)
-    final double moonRadius = size.width * 0.15;
-    final Offset moonCenter = Offset(size.width * 0.85, size.height * 0.12);
+    /// 🔹 Define Moon Position & Size (Now **Half the Previous Size**)
+    final double moonRadius = size.width * 0.08; // 🔹 Smaller moon
+    final Offset moonCenter = Offset(size.width - moonRadius - 5, moonRadius + 5); // Nested top-right
 
-    // Moon pulsating glow effect
-    canvas.drawCircle(moonCenter, moonRadius * (1.3 + moonGlowSize), moonGlowPaint);
-    canvas.drawCircle(moonCenter, moonRadius, moonPaint);
+    // 🔹 Three-layered glow effect
+    canvas.drawCircle(moonCenter, moonRadius * (1.5 + moonGlowSize), moonGlowPaint2); 
+    canvas.drawCircle(moonCenter, moonRadius * (1.3 + moonGlowSize), moonGlowPaint1); 
+    canvas.drawCircle(moonCenter, moonRadius, moonPaint); 
 
-    /// 🔹 Draw Twinkling Stars
+    /// 🔹 Draw Twinkling Stars (Avoiding Moon Area)
     for (int i = 0; i < starPositions.length; i++) {
+      final Offset starPos = starPositions[i];
+
+      /// 🚀 **Ensure Stars Don't Overlap the Moon**
+      final double distanceToMoon = (starPos - moonCenter).distance;
+      if (distanceToMoon < moonRadius * 1.5) continue; // Skip stars near moon
+
       starPaint.color = Colors.white.withOpacity(starOpacities[i]);
-      canvas.drawCircle(starPositions[i], 1.5, starPaint);
+      canvas.drawCircle(starPos, 1.8, starPaint); 
     }
   }
 
@@ -59,13 +67,13 @@ class _AnimatedNightSkyState extends State<AnimatedNightSky>
     /// 🔹 Initialize Animation Controller
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 6),
+      duration: const Duration(seconds: 8), // 🔹 Slower for subtle effects
     )..repeat(reverse: true);
 
     final Random random = Random();
 
-    /// 🔹 Generate Star Positions & Opacity (For Twinkling Effect)
-    _starPositions = List.generate(15, (index) {
+    /// 🔹 Generate Star Positions & Opacity (More Stars)
+    _starPositions = List.generate(30, (index) {
       return Offset(
         random.nextDouble() * 400, // Random width
         random.nextDouble() * 250, // Upper part of screen
@@ -73,14 +81,14 @@ class _AnimatedNightSkyState extends State<AnimatedNightSky>
     });
 
     /// 🔹 Ensure `_starOpacities` is initialized
-    _starOpacities = List.generate(15, (index) => random.nextDouble() * 0.5 + 0.5);
+    _starOpacities = List.generate(30, (index) => random.nextDouble() * 0.5 + 0.5);
 
-    /// 🔹 Randomly change star opacities over time (Twinkling effect)
+    /// 🔹 Randomly change star opacities over time (Flicker Less Often)
     _controller.addListener(() {
       if (mounted) {
         setState(() {
           for (int i = 0; i < _starOpacities.length; i++) {
-            if (random.nextDouble() > 0.97) { // Some stars randomly flicker
+            if (random.nextDouble() > 0.99) { // 🔹 Now flickers less often
               _starOpacities[i] = random.nextDouble() * 0.5 + 0.5;
             }
           }

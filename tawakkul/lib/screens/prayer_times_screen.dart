@@ -1,54 +1,12 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../controllers/prayer_times_controller.dart';
+import '../painter/night_sky_painter.dart';
 import '../widgets/prayer_timer_widget.dart';
 import '../widgets/prayer_list_widget.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/ramadan_countdown_widget.dart';
-
-/// 🔹 Night Sky Background Painter
-class NightSkyPainter extends CustomPainter {
-  final int starCount;
-  final Color moonColor;
-  final Color starColor;
-
-  NightSkyPainter({
-    this.starCount = 50, // Adjust for more/less stars
-    this.moonColor = Colors.white,
-    this.starColor = Colors.white70,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint moonPaint = Paint()..color = moonColor.withOpacity(0.9);
-    final Paint moonGlowPaint = Paint()..color = moonColor.withOpacity(0.2);
-    final Paint starPaint = Paint()..color = starColor;
-    final Random random = Random();
-
-    /// 🔹 Draw Moon (Top Right)
-    final double moonRadius = size.width * 0.15;
-    final Offset moonCenter = Offset(size.width * 0.85, size.height * 0.15);
-
-    // Moon glow effect
-    canvas.drawCircle(moonCenter, moonRadius * 1.4, moonGlowPaint);
-    // Actual Moon
-    canvas.drawCircle(moonCenter, moonRadius, moonPaint);
-
-    /// 🔹 Draw Stars (Randomly placed)
-    for (int i = 0; i < starCount; i++) {
-      final double starX = random.nextDouble() * size.width;
-      final double starY = random.nextDouble() * size.height * 0.4; // Upper half
-      final double starSize = random.nextDouble() * 2 + 1; // Random small size
-
-      canvas.drawCircle(Offset(starX, starY), starSize, starPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}
 
 class PrayerTimesScreen extends StatelessWidget {
   const PrayerTimesScreen({super.key});
@@ -74,12 +32,8 @@ class PrayerTimesScreen extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            /// 🔹 **Night Sky Background**
-            Positioned.fill(
-              child: CustomPaint(
-                painter: NightSkyPainter(),
-              ),
-            ),
+            /// 🔹 **Animated Night Sky**
+            const Positioned.fill(child: AnimatedNightSky()),
 
             /// 🔹 **Main Column with Dynamic Scaling**
             Column(
@@ -114,7 +68,7 @@ class PrayerTimesScreen extends StatelessWidget {
                       child: Container(
                         padding: EdgeInsets.symmetric(
                             vertical: screenHeight * 0.004,
-                            horizontal: screenWidth * 0.02), // Scales padding
+                            horizontal: screenWidth * 0.02),
                         decoration: BoxDecoration(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(4),
@@ -161,7 +115,7 @@ class PrayerTimesScreen extends StatelessWidget {
 
                 SizedBox(height: screenHeight * 0.015), // ✅ Adjusted spacing
 
-                /// 🔹 **Date Selector**
+                /// 🔹 **Date Selector (Restored)**
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -223,11 +177,7 @@ class PrayerTimesScreen extends StatelessWidget {
           ],
         ),
       ),
-
-      /// 🔹 **Bottom Navigation Bar (SafeArea for iOS)**
-      bottomNavigationBar: const SafeArea(
-        child: BottomNavBar(),
-      ),
+      bottomNavigationBar: const SafeArea(child: BottomNavBar()),
     );
   }
 }
