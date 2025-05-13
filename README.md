@@ -3,8 +3,6 @@
 <!-- HEADER STYLE: CLASSIC -->
 <div align="center">
 
-<img src="tawakkul.png" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
-
 # TAWAKKUL
 
 <em>Empowering your spiritual journey with seamless guidance.</em>
